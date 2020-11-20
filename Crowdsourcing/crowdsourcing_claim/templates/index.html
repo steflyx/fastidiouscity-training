@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en-US">
+	<head>
+		<meta title="Crowdsourcing for claim detection">
+	    <meta charset="UTF-8">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+	    <title>Crowdsourcing for claim detection</title>
+	    <script type=text/javascript>
+  			$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+		</script>
+	    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+	    <style type="text/css">
+	    	
+	    	h1, h2, p, ul{
+	    		text-align: center;
+	    	}
+
+	    	li{
+	    		list-style: none;
+	    	}
+
+	    	#start{
+	    		width: 26vw;
+    			height: 3em;
+    			margin-left: 36vw;
+	    	}
+
+	    	#question_div{
+	    		border: 1px solid;
+			    width: 80vw;
+			    margin-left: 3vw;
+			    display: none;
+			    padding: 5vw;
+	    	}
+
+	    	.answer{
+	    		width: 30vw;
+    			height: 3em;
+	    	}
+
+	    	#yes{
+	    		margin-left: 10vw; 
+	    	}
+
+	    	#none{
+	    		margin-top: 1em;
+	    		margin-left: 25vw;
+	    	}
+	    </style>
+
+	</head>
+
+	<body>
+		
+		<h1>Welcome!</h1>
+		<h2>We need your help for our project!</h2>
+		<p>We want to label sentences given by politicians as claim or not claim. By 'claim', we mean a sentence that should be fact-checked to assess its truth value</p>
+		<p>As an example:</p>
+		<ul>
+			<li>"<b>Hello everyone! It's a pleasure to meet you today!</b>" -> Not a claim</li>
+			<li>"<b>My administration increased the national GDP by 3% in the last year</b>" -> Claim</li>
+		</ul>
+
+		<input type="button" id='start' value="Let's begin!">
+
+		<div id="question_div">
+			
+			<h2 style='margin: 0'>Do you think the following sentence is a claim?</h2>
+			<p id="sentence"></p>
+			<input type="button" class="answer" id="yes" value="Yes" answer="Claim">
+			<input type="button" class="answer" id="no"  value="No" answer="Not Claim">
+			<input type="button" class="answer" id="none" value="Don't know" answer="Don't know">
+
+		</div>
+
+		<p>Percentage completion: <span id="perc_completion">{{ perc_completion/100 }}<span>%</p>
+		
+	</body>
+
+	<script type="text/javascript">
+
+		var sentence_id = -1;
+		var sending = false;
+
+		//Asks for the first sentence		
+		$("#start").click(function(){
+
+			$(this).hide();
+
+			$.getJSON($SCRIPT_ROOT + '/send_sentence', {
+				'sentence_id': -1
+			}, function(data){
+
+				$("#sentence").text(data.sentence_text)
+				sentence_id = data.sentence_id
+				$("#question_div").show();
+
+			});
+
+		});
+
+		//Asks for another sentence
+		$(".answer").click(function(){
+
+
+			if (sending == false){
+				$.getJSON($SCRIPT_ROOT + '/send_sentence', {
+					'sentence_id': sentence_id,
+					'response': $(this).attr('answer')
+				}, function(data){
+
+					if (data.sentence_id == -1){
+						$("#question_div").hide();
+						$("body").append($(document.createElement('p')).text(data.sentence_text));
+
+					}
+					else{
+						sending = false;
+						$("#sentence").text(data.sentence_text);
+						sentence_id = data.sentence_id;
+						$("#question_div").show();
+						$("#perc_completion").text(data.perc_completion/100);
+					}
+					
+
+				});
+			}
+
+			sending = true;
+
+		});
+
+
+
+	</script>
+
+</html>
