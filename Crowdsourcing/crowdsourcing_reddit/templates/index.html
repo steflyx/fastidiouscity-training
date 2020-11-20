@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en-US">
+	<head>
+		<meta title="Crowdsourcing for ideology detection">
+	    <meta charset="UTF-8">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+	    <title>Crowdsourcing for ideology detection</title>
+	    <script type=text/javascript>
+  			$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+		</script>
+	    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+	    <style type="text/css">
+	    	
+	    	h1, h2, h3, p, ul{
+	    		text-align: center;
+	    	}
+
+	    	li{
+	    		list-style: none;
+	    	}
+
+	    	#start{
+	    		width: 26vw;
+    			height: 3em;
+    			margin-left: 36vw;
+	    	}
+
+	    	#question_div{
+	    		border: 1px solid;
+			    width: 80vw;
+			    margin-left: 3vw;
+			    display: none;
+			    padding: 5vw;
+	    	}
+
+	    	.answer{
+	    		width: 30vw;
+    			height: 3em;
+	    	}
+
+	    	#yes{
+	    		margin-left: 10vw; 
+	    	}
+
+	    	#none{
+	    		margin-top: 1em;
+	    		margin-left: 25vw;
+	    	}
+	    </style>
+
+	</head>
+
+	<body>
+		
+		<h1>Welcome!</h1>
+		<h2>We need your help for our project!</h2>
+		<p>We want to label articles as left or right leaning. We're working with newspaper from the US, so the definition of left/right may vary if you're living in a different country.</p>
+		<p>In general, we consider left leaning those articles that show sympathy towards the US Democratic party (this might be shown through the words that are used, the comments that are made or even the content itself of the article).</p>
+		<p>Conversely, we consider right leaning those articles that show sympathy towards the US Republican party.</p>
+
+		<input type="button" id='start' value="Let's begin!">
+
+		<div id="question_div">
+			
+			<h2 style='margin: 0'>Do you think the following article is left or right leaning?</h2>
+			<h3 id="title"></h3>
+			<p id="summary"></p>
+			<br>
+			<p>This is just a summary, you can find the entire article at this url:</p>
+			<p><a id="url" target='blank'></a></p>
+			<input type="button" class="answer" id="yes" value="Left" answer="Left">
+			<input type="button" class="answer" id="no"  value="Right" answer="Right">
+			<input type="button" class="answer" id="none" value="Don't know" answer="Don't know">
+
+		</div>
+
+		<p>Percentage completion: <span id="perc_completion">{{ perc_completion }}<span>%</p>
+		
+	</body>
+
+	<script type="text/javascript">
+
+		var article_id = -1;
+		var sending = false;
+
+		//Asks for the first sentence		
+		$("#start").click(function(){
+
+			$(this).hide();
+
+			$.getJSON($SCRIPT_ROOT + '/send_article', {
+				'article_id': -1
+			}, function(data){
+
+				$("#title").text(data.title);
+				$("#summary").text(data.summary);
+				$("#url").text(data.url);
+				$("#url").attr('href', data.url);
+				article_id = data.article_id;
+				$("#question_div").show();
+
+			});
+
+		});
+
+		//Asks for another sentence
+		$(".answer").click(function(){
+
+
+			if (sending == false){
+				$.getJSON($SCRIPT_ROOT + '/send_article', {
+					'article_id': article_id,
+					'response': $(this).attr('answer')
+				}, function(data){
+
+					if (data.article_id == -1){
+						$("#question_div").hide();
+						$("body").append($(document.createElement('p')).text(data.text));
+
+					}
+					else{
+						sending = false;
+						$("#title").text(data.title);
+						$("#summary").text(data.summary);
+						$("#url").text(data.url);
+						$("#url").attr('href', data.url);
+						article_id = data.article_id;
+						$("#question_div").show();
+						$("#perc_completion").text(data.perc_completion);
+					}
+					
+
+				});
+			}
+
+			sending = true;
+
+		});
+
+
+
+	</script>
+
+</html>
